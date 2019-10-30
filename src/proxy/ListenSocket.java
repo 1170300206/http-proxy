@@ -13,6 +13,7 @@ public class ListenSocket{
   private final UserFilter userFilter;
   private final FireWall fireWall;
   private final Fish fish;
+  private final Cacher cacher;
   private ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
   /**
    * Initiate the server listener 
@@ -20,12 +21,14 @@ public class ListenSocket{
    * @param FILTER_USER for filter the users, set to true to open filter
    * @param FIRE_WALL for filter the web sites, set to true to open filter
    * @param FISH for redirect some of the web sites
+   * @param CACHE to open the cache option
    * @throws IOException when port number is illegal
    */
-  public ListenSocket(int portNum, boolean FILTER_USER, boolean FIRE_WALL, boolean FISH) throws IOException{
+  public ListenSocket(int portNum, boolean FILTER_USER, boolean FIRE_WALL, boolean FISH, boolean CACHE) throws IOException{
     userFilter = new UserFilter(FILTER_USER);
     fireWall = new FireWall(FIRE_WALL);
     fish = new Fish(FISH);
+    cacher = new Cacher(CACHE);
     if(portNum < 0 || portNum > 65535) {
       throw new IOException("wrong port number!");
     }
@@ -41,7 +44,7 @@ public class ListenSocket{
           return;
         }
         System.out.println("get one socket: "+ socket.getInetAddress());
-        ClientSocket clientSocket = new ClientSocket(socket, fireWall, fish);
+        ClientSocket clientSocket = new ClientSocket(socket, fireWall, fish, cacher);
         cachedThreadPool.execute(clientSocket);
       } catch (IOException e) {
         throw e;

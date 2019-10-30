@@ -2,7 +2,10 @@ package proxy;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,22 +16,26 @@ import java.util.regex.Pattern;
  * 
  */
 public class Request {
+  private String url;
   private String host;
   private int port;
   private List<byte[]> requests = new ArrayList<>();
   private final Fish fish;
+  private final Cacher cacher;
   private final int MAXLENGTH = 65536;
-
+  private final DateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HHHH:mm:ss ");
   /**
    * get host and port from the input stream, save the request.
    * 
    * @param in input stream from a client
    * @param fish lists that trying to do redirection
+   * @param cacher manage the cache
    * @throws IOException
    * @throws InterruptedException
    */
-  public Request(InputStream in, Fish fish) throws IOException, InterruptedException {
+  public Request(InputStream in, Fish fish, Cacher cacher) throws IOException, InterruptedException {
     this.fish = fish;
+    this.cacher = cacher;
     // state = 0, means the url hasn't gotten yet
     int state = 0;
     // current input that did not being buffered
@@ -41,7 +48,7 @@ public class Request {
         String firstLine = tmp.substring(0, firstEnter);
         int secondEnter = tmp.substring(firstEnter + 2).indexOf("\r\n") + firstEnter + 2;
         String secondLine = tmp.substring(firstEnter + 2, secondEnter);
-        String[] segs = firstLine.split(" ");
+        url = firstLine.split(" ")[1];
         String[] hosts = secondLine.split(" ")[1].split(":");
         //Pattern pattern = Pattern.compile("^http://(.*)(:[0-9]*)?(.*)?");
         host = hosts[0];
@@ -65,7 +72,7 @@ public class Request {
           //host = matcher.group(1).split("/")[0];
           host = host_modified;
           port = 80;
-          
+          url = url.replace(host, host_modified);
         }
         state = 1;
       }
@@ -74,6 +81,14 @@ public class Request {
         byte[] tmp = new byte[len];
         System.arraycopy(request, 0, tmp, 0, len);
         requests.add(tmp);
+        Date date;
+        // there is cache, so add if-modified-since
+        if((date = cacher.date(url)) != null) {
+          byte[] request_tmp = new byte[len - 2];
+          System.arraycopy(request, 0, request_tmp, 0, len - 2);
+          String modified = new String(request_tmp) + "If-Modified-Since: " + dateFormat.format(date) + " GMT\r\n\r\n";
+          tmp = (modified).getBytes();
+        }
         break;
       }
       requests.add(request);
@@ -127,5 +142,13 @@ public class Request {
   public List<byte[]> getRequest() {
     System.out.println("Return a request");
     return new ArrayList<byte[]>(requests);
+  }
+  
+  /**
+   * return the url of current request
+   * @return the url of current request
+   */
+  public String getUrl() {
+    return url;
   }
 }
