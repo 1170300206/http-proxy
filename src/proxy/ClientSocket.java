@@ -2,7 +2,6 @@ package proxy;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +13,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import com.sun.org.apache.xerces.internal.impl.xpath.regex.ParseException;
+import java.util.Map.Entry;
 import proxy.Request;
 import proxy.Response;
 
@@ -62,25 +61,16 @@ public class ClientSocket implements Runnable {
     try {
       forwardSocket = new Socket(host, port);
       forwardSocket.setSoTimeout(TIMEOUT_S);
-      System.out.println("connect to server, the host is: " + host + ", the port is: " + port);
+      System.out.println("connect to server, the host is: " + request.getUrl() + ", the port is: " + port);
       OutputStream out = forwardSocket.getOutputStream();
+      // write to server the request
       for (byte[] request : requests) {
         out.write(request);
       }
       InputStream in = forwardSocket.getInputStream();
-      response = new Response(in, out_c, cacher.state());
-      // not modified, read from cache
-      if (response.state() == 304 && cacher.state()) {
-        File file = new File("cache/" + URLEncoder.encode(request.getUrl()));
-        FileInputStream input = new FileInputStream(file);
-        byte[] tmp = new byte[MAXLENGTH];
-        while (input.read(tmp) != -1) {
-          responses.add(tmp);
-        }
-        input.close();
-      } else {
-        responses = response.getResponse();
-      }
+      response = new Response(in, out_c, request.getUrl(), cacher);
+      // save responses
+      responses = response.getResponse();
       forwardSocket.close();
     } catch (UnknownHostException e) {
       e.printStackTrace();
@@ -108,22 +98,12 @@ public class ClientSocket implements Runnable {
       // get responses
       List<byte[]> responses =
           pipe(request.getHost(), request.getPort(), request.getRequest(), out);
+      /*
       // write responses regardless of the cacher
       for (byte[] response : responses) {
         out.write(response);
-      }
-      if (response.state() != 304 && cacher.state()) {
-        // save cache
-        File file = new File("cache/" + URLEncoder.encode(request.getUrl()));
-        FileOutputStream fo = new FileOutputStream(file, true);
-        BufferedOutputStream bf = new BufferedOutputStream(fo);
-        for (byte[] bytes : responses) {
-          bf.write(bytes);
-        }
-        bf.close();
-        fo.close();
-      }
-      cacher.set(request.getUrl(), response.date());
+      }*/
+      cacher.set(request.getUrl(), response.date(), responses, response.state());
       cacher.save();
       cSocket.close();
       System.out.println("Thread closed");
