@@ -41,7 +41,7 @@ public class ListenSocket{
         // if the user is blocked
         if(userFilter.isFiltered(socket.getInetAddress())) {
           System.out.println("User: "+ socket.getInetAddress() + " is blocked");
-          return;
+          continue;
         }
         System.out.println("get one socket: "+ socket.getInetAddress());
         ClientSocket clientSocket = new ClientSocket(socket, fireWall, fish, cacher);

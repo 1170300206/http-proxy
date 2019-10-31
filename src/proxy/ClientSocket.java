@@ -1,19 +1,13 @@
 package proxy;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Map.Entry;
 import proxy.Request;
 import proxy.Response;
 
@@ -59,6 +53,7 @@ public class ClientSocket implements Runnable {
     List<byte[]> responses = new ArrayList<>();
     Socket forwardSocket;
     try {
+      // connect with the destination host
       forwardSocket = new Socket(host, port);
       forwardSocket.setSoTimeout(TIMEOUT_S);
       System.out.println("connect to server, the host is: " + request.getUrl() + ", the port is: " + port);
@@ -93,6 +88,7 @@ public class ClientSocket implements Runnable {
       if (fireWall.isFiltered(request.getHost())) {
         System.out.println("host: " + request.getHost() + " is blocked");
         cSocket.close();
+        return;
       }
       OutputStream out = cSocket.getOutputStream();
       // get responses

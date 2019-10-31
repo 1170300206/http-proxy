@@ -6,7 +6,7 @@ import proxy.ListenSocket;
 public class Main{
   private static final boolean USER_FILTER = false;
   private static final boolean FIRE_WALL = false;
-  private static final boolean FISH = false;
+  private static final boolean FISH = true;
   private static final boolean CACHE = true;
   public static void main(String[] arg) throws ParseException {
     try {

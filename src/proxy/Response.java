@@ -54,11 +54,18 @@ public class Response {
           int firstEnter = tmp.indexOf("\r\n");
           String firstLine = tmp.substring(0, firstEnter);
           state = Integer.valueOf(firstLine.split(" ")[1]);
-          int dateIndex = tmp.indexOf("Date");
+          int dateIndex = tmp.indexOf("Last-Modified");
+          Pattern pattern;
+          if(dateIndex == -1) {
+            dateIndex = tmp.indexOf("Date");
+            pattern = Pattern.compile("Date: (.*) GMT");
+          }else {
+            pattern = Pattern.compile("Last-Modified: (.*) GMT");
+          }
           int dateEnd = tmp.substring(dateIndex).indexOf("\r\n") + dateIndex;
           // get the line with date
           String dateLine = tmp.substring(dateIndex, dateEnd);
-          Pattern pattern = Pattern.compile("Date: (.*) GMT");
+          System.out.println(dateLine + "---------------------------------");
           Matcher matcher = pattern.matcher(dateLine);
           if (!matcher.matches()) {
             throw new IOException();
@@ -70,22 +77,26 @@ public class Response {
         System.out.println("the http state for " + url + " is: " + state);
         // there is cache and not modified, read from cache
         if (cacher.state() && ((cacher.date(url) != null) && state == 304)) {
-          System.out.println("*********************try to get cache: " + url + "***********");
+          System.out.println("*************try to get cache: " + url + "***********");
           File file = new File("cache/" + Md5.md5(url));
           FileInputStream input = new FileInputStream(file);
           byte[] fileTmp = new byte[MAXLENGTH];
           while (input.read(fileTmp) != -1) {
             responses.add(fileTmp);
             out_c.write(fileTmp);
+            // change a new array address
+            fileTmp = new byte[MAXLENGTH];
           }
           input.close();
           // if read from file, then just break the loop
           break;
         }
+        // if the length is maximum
         if (len == MAXLENGTH) {
           responses.add(response);
           out_c.write(response);
         } else {
+          // cut the empty part
           byte[] tmp = new byte[len];
           System.arraycopy(response, 0, tmp, 0, len);
           // write directly before finished

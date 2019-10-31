@@ -81,7 +81,7 @@ public class Cacher {
       File file = new File("cache/" + Md5.md5(url));
       FileOutputStream fo;
       try {
-        fo = new FileOutputStream(file, false);
+        fo = new FileOutputStream(file, false );
         BufferedOutputStream bf = new BufferedOutputStream(fo);
         for (byte[] bytes : responses) {
           bf.write(bytes);

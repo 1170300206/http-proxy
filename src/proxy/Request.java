@@ -50,6 +50,7 @@ public class Request {
     try {
       while ((len = in.read(request)) != -1) {
         if (state == 0) {
+          // get first to line to fetch host and url
           String tmp = new String(request);
           int firstEnter = tmp.indexOf("\r\n");
           String firstLine = tmp.substring(0, firstEnter);
@@ -68,9 +69,6 @@ public class Request {
             port = Integer.valueOf(hosts[1]);
           }
           if (!host_modified.equals(host)) {
-            /*
-             * if(!matcher.matches()) { throw new IOException(); }
-             */
             System.out.println("redirected to: " + host_modified);
             // reconstruct HTTP head
             request = (firstLine.replace(host, host_modified) + "\r\nHost: " + host_modified
@@ -90,7 +88,6 @@ public class Request {
           System.out.println("Read aok");
           byte[] tmp = new byte[len];
           System.arraycopy(request, 0, tmp, 0, len);
-          requests.add(tmp);
           Date date;
           // there is cache, so add if-modified-since
           if ((date = cacher.date(url)) != null) {
@@ -100,7 +97,9 @@ public class Request {
             String modified = new String(request_tmp) + "If-Modified-Since: "
                 + dateFormat.format(date) + " GMT\r\n\r\n";
             tmp = (modified).getBytes();
+            System.out.println(modified);
           }
+          requests.add(tmp);
           break;
         }
         requests.add(request);
